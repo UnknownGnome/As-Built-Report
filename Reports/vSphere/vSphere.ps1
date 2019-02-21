@@ -6,7 +6,7 @@
 .DESCRIPTION
     Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
 .NOTES
-    Version:        0.3.0
+    Version:        0.3.1
     Author:         Tim Carman
     Twitter:        @tpcarman
     Github:         tpcarman
@@ -78,7 +78,7 @@ function Get-License {
     A vSphere ESXi Host object
     .PARAMETER vCenter
     A vSphere vCenter Server object
-    .PARAMETER Licenses
+    .PARAMETER LicenseManager
     All vSphere product licenses
     .INPUTS
     System.Management.Automation.PSObject.
@@ -89,7 +89,7 @@ function Get-License {
     .EXAMPLE
     PS> Get-License -vCenter VCSA
     .EXAMPLE
-    PS> Get-License -Licenses
+    PS> Get-License -LicenseManager
     #>
     [CmdletBinding()][OutputType('System.Management.Automation.PSObject')]
 
@@ -99,7 +99,7 @@ function Get-License {
         [ValidateNotNullOrEmpty()]
         [PSObject]$vCenter, [PSObject]$VMHost,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false)]
-        [Switch]$Licenses
+        [Switch]$All
     ) 
 
     $LicenseObject = @()
@@ -107,7 +107,7 @@ function Get-License {
     $LicenseManager = Get-View $ServiceInstance.Content.LicenseManager
     $LicenseManagerAssign = Get-View $LicenseManager.LicenseAssignmentManager 
     if ($VMHost) {
-        $VMHostId = $VMHost.Extensiondata.Config.Host.Value
+        $VMHostId = $VMHost.ExtensionData.MoRef.Value
         $VMHostAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($VMHostId)    
         $VMHostLicense = $VMHostAssignedLicense | Where-Object {$_.EntityId -eq $VMHostId}
         if ($Options.ShowLicenses) {
@@ -116,7 +116,7 @@ function Get-License {
             $VMHostLicenseKey = "*****-*****-*****" + $VMHostLicense.AssignedLicense.LicenseKey.Substring(17)
         }
         $LicenseObject = [PSCustomObject]@{                               
-            Product = $VMHostLicense.AssignedLicense.Name 
+            LicenseName = $VMHostLicense.AssignedLicense.Name 
             LicenseKey = $VMHostLicenseKey                   
         }
     }
@@ -131,11 +131,11 @@ function Get-License {
             $vCenterLicenseKey = 'No License Key'
         }
         $LicenseObject = [PSCustomObject]@{                               
-            Product = $vCenterLicense.AssignedLicense.Name
+            LicenseName = $vCenterLicense.AssignedLicense.Name
             LicenseKey = $vCenterLicenseKey                    
         }
     }
-    if ($Licenses) {
+    if ($All) {
         foreach ($License in $LicenseManager.Licenses) {
             if ($Options.ShowLicenses) {
                 $LicenseKey = $License.LicenseKey
@@ -143,7 +143,7 @@ function Get-License {
                 $LicenseKey = "*****-*****-*****" + $License.LicenseKey.Substring(17)
             }
             $Object = [PSCustomObject]@{                               
-                'Product' = $License.Name
+                'LicenseName' = $License.Name
                 'LicenseKey' = $LicenseKey
                 'Total' = $License.Total
                 'Used' = $License.Used                     
@@ -565,7 +565,7 @@ foreach ($VIServer in $Target) {
                         'Version' = $vCenter.Version
                         'Build' = $vCenter.Build
                         'OS Type' = $vCenter.ExtensionData.Content.About.OsType
-                        'Product' = $vCenterLicense.Product
+                        'Product License' = $vCenterLicense.LicenseName
                         'License Key' = $vCenterLicense.LicenseKey
                         'HTTP Port' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpport'}).Value
                         'HTTPS Port' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpsport'}).Value
@@ -577,8 +577,8 @@ foreach ($VIServer in $Target) {
                     }   
 
                     if ($Healthcheck.vCenter.Licensing) {
-                        $vCenterDetail | Where-Object {$_.'Product' -like '*Evaluation*'} | Set-Style -Style Warning -Property 'Product'
-                        $vCenterDetail | Where-Object {$_.'Product' -eq $null} | Set-Style -Style Warning -Property 'Product'
+                        $vCenterDetail | Where-Object {$_.'Product License' -like '*Evaluation*'} | Set-Style -Style Warning -Property 'Product License'
+                        $vCenterDetail | Where-Object {$_.'Product License' -eq $null} | Set-Style -Style Warning -Property 'Product License'
                         $vCenterDetail | Where-Object {$_.'License Key' -like '*-00000-00000'} | Set-Style -Style Warning -Property 'License Key'
                         $vCenterDetail | Where-Object {$_.'License Key' -eq 'No License Key'} | Set-Style -Style Warning -Property 'License Key'
                     }
@@ -621,11 +621,11 @@ foreach ($VIServer in $Target) {
 
                     #region vCenter Server Licensing
                     Section -Style Heading3 'Licensing' {
-                        $Licenses = Get-License -Licenses | Select-Object Product, @{L = 'License Key'; E = {($_.LicenseKey)}}, Total, Used, @{L = 'Available'; E = {($_.total) - ($_.Used)}} -Unique
+                        $Licenses = Get-License -LicenseManager | Select-Object @{L = 'Product License'; E = {($_.LicenseName)}}, @{L = 'License Key'; E = {($_.LicenseKey)}}, Total, Used, @{L = 'Available'; E = {($_.total) - ($_.Used)}} -Unique
                         if ($Healthcheck.vCenter.Licensing) {
-                            $Licenses | Where-Object {$_.Product -eq 'Product Evaluation'} | Set-Style -Style Warning 
+                            $Licenses | Where-Object {$_.'Product License' -eq 'Product Evaluation'} | Set-Style -Style Warning 
                         }
-                        $Licenses | Sort-Object Product | Table -Name 'Licensing' -ColumnWidths 32, 32, 12, 12, 12
+                        $Licenses | Sort-Object 'Product License' | Table -Name 'Licensing' -ColumnWidths 32, 32, 12, 12, 12
                     }
                     #endregion vCenter Server Licensing
 
@@ -1618,7 +1618,7 @@ foreach ($VIServer in $Target) {
                                         'Bios Release Date' = $VMHost.ExtensionData.Hardware.BiosInfo.ReleaseDate 
                                         'ESXi Version' = $VMHost.Version 
                                         'ESXi Build' = $VMHost.build 
-                                        'Product' = $VMHostLicense.Product 
+                                        'Product License' = $VMHostLicense.LicenseName 
                                         'License Key' = $VMHostLicense.LicenseKey 
                                         'Boot Time' = $VMHost.ExtensionData.Runtime.Boottime 
                                         'Uptime Days' = $VMHostUptime.UptimeDays
@@ -1630,7 +1630,7 @@ foreach ($VIServer in $Target) {
                                         $VMHostDetail | Where-Object {$_.'HyperThreading' -eq 'Disabled'} | Set-Style -Style Warning -Property 'Disabled'
                                     }
                                     if ($Healthcheck.VMHost.Licensing) {
-                                        $VMHostDetail | Where-Object {$_.'Product' -like '*Evaluation*'} | Set-Style -Style Warning -Property 'Product'
+                                        $VMHostDetail | Where-Object {$_.'Product License' -like '*Evaluation*'} | Set-Style -Style Warning -Property 'Product License'
                                         $VMHostDetail | Where-Object {$_.'License Key' -like '*-00000-00000'} | Set-Style -Style Warning -Property 'License Key'
                                     }
                                     if ($Healthcheck.VMHost.ScratchLocation) {
@@ -1652,7 +1652,7 @@ foreach ($VIServer in $Target) {
                                             'Boot Type' = $ESXiBootDevice.BootType
                                             'Vendor' = $ESXiBootDevice.Vendor
                                             'Model' = $ESXiBootDevice.Model
-                                            'Size' = "$([math]::Round($ESXiBootDevice.SizeMB / 1024), 2) GB"
+                                            'Size' = "$([math]::Round($ESXiBootDevice.SizeMB / 1024, 2)) GB"
                                             'Is SAS' = Switch ($ESXiBootDevice.IsSAS) {
                                                 $true {'Yes'}
                                                 $false {'No'}

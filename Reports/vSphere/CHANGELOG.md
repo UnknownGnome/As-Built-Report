@@ -1,5 +1,10 @@
 # VMware vSphere As Built Report Changelog
 
+## 0.3.1
+### What's New
+- Fix for ESXi host and vCenter server license reporting
+- Fix for ESXi host boot device size
+
 ## 0.3.0
 ### What's New
 - Improvements to code structure & readability

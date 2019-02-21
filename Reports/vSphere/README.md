@@ -198,6 +198,11 @@ Sample vSphere As Built report with health checks, using custom report style.
 ![Sample vSphere Report 2](https://github.com/tpcarman/As-Built-Report/blob/dev/Reports/vSphere/Samples/Sample_vSphere_Report_2.png "Sample vSphere Report 2")
 
 # Release Notes
+## 0.3.1
+### What's New
+- Fix for ESXi host and vCenter server license reporting
+- Fix for ESXi host boot device size
+
 ## 0.3.0
 ### What's New
 - Improvements to code structure & readability
