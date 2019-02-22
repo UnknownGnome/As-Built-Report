@@ -70,7 +70,7 @@ function Get-License {
     .DESCRIPTION
     Function to retrieve vSphere product licensing information.
     .NOTES
-    Version:        0.1.0
+    Version:        0.1.1
     Author:         Tim Carman
     Twitter:        @tpcarman
     Github:         tpcarman
@@ -89,7 +89,7 @@ function Get-License {
     .EXAMPLE
     PS> Get-License -vCenter VCSA
     .EXAMPLE
-    PS> Get-License -LicenseManager
+    PS> Get-License -All
     #>
     [CmdletBinding()][OutputType('System.Management.Automation.PSObject')]
 
@@ -99,16 +99,16 @@ function Get-License {
         [ValidateNotNullOrEmpty()]
         [PSObject]$vCenter, [PSObject]$VMHost,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false)]
-        [Switch]$LicenseManager
+        [Switch]$All
     ) 
 
     $LicenseObject = @()
     $ServiceInstance = Get-View ServiceInstance -Server $vCenter
     $LicenseManager = Get-View $ServiceInstance.Content.LicenseManager
-    $LicenseManagerAssign = Get-View $LicenseManager.LicenseAssignmentManager 
+    $LicenseAssignManage = Get-View $LicenseManager.LicenseAssignmentManager 
     if ($VMHost) {
         $VMHostId = $VMHost.ExtensionData.MoRef.Value
-        $VMHostAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($VMHostId)    
+        $VMHostAssignedLicense = $LicenseAssignManage.QueryAssignedLicenses($VMHostId)    
         $VMHostLicense = $VMHostAssignedLicense | Where-Object {$_.EntityId -eq $VMHostId}
         if ($Options.ShowLicenses) {
             $VMHostLicenseKey = $VMHostLicense.AssignedLicense.LicenseKey
@@ -121,7 +121,7 @@ function Get-License {
         }
     }
     if ($vCenter) {
-        $vCenterAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($vCenter.InstanceUuid.AssignedLicense)
+        $vCenterAssignedLicense = $LicenseAssignManage.QueryAssignedLicenses($vCenter.InstanceUuid.AssignedLicense)
         $vCenterLicense = $vCenterAssignedLicense | Where-Object {$_.EntityId -eq $vCenter.InstanceUuid}
         if ($vCenterLicense -and $Options.ShowLicenses) { 
             $vCenterLicenseKey = $vCenterLicense.AssignedLicense.LicenseKey
@@ -135,7 +135,7 @@ function Get-License {
             LicenseKey = $vCenterLicenseKey                    
         }
     }
-    if ($LicenseManager) {
+    if ($All) {
         foreach ($License in $LicenseManager.Licenses) {
             if ($Options.ShowLicenses) {
                 $LicenseKey = $License.LicenseKey
@@ -621,7 +621,7 @@ foreach ($VIServer in $Target) {
 
                     #region vCenter Server Licensing
                     Section -Style Heading3 'Licensing' {
-                        $Licenses = Get-License -LicenseManager | Select-Object @{L = 'Product License'; E = {($_.LicenseName)}}, @{L = 'License Key'; E = {($_.LicenseKey)}}, Total, Used, @{L = 'Available'; E = {($_.total) - ($_.Used)}} -Unique
+                        $Licenses = Get-License -All | Select-Object @{L = 'Product License'; E = {($_.LicenseName)}}, @{L = 'License Key'; E = {($_.LicenseKey)}}, Total, Used, @{L = 'Available'; E = {($_.total) - ($_.Used)}} -Unique
                         if ($Healthcheck.vCenter.Licensing) {
                             $Licenses | Where-Object {$_.'Product License' -eq 'Product Evaluation'} | Set-Style -Style Warning 
                         }
