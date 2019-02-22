@@ -135,7 +135,7 @@ function Get-License {
             LicenseKey = $vCenterLicenseKey                    
         }
     }
-    if ($All) {
+    if ($LicenseManager) {
         foreach ($License in $LicenseManager.Licenses) {
             if ($Options.ShowLicenses) {
                 $LicenseKey = $License.LicenseKey
