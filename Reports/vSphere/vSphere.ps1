@@ -99,7 +99,7 @@ function Get-License {
         [ValidateNotNullOrEmpty()]
         [PSObject]$vCenter, [PSObject]$VMHost,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false)]
-        [Switch]$All
+        [Switch]$LicenseManager
     ) 
 
     $LicenseObject = @()
