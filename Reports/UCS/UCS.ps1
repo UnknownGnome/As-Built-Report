@@ -771,9 +771,10 @@ foreach ($UCS in $Target) {
         #region Servers Section
         if ($Section.Servers) {
             Section -Style Heading2 -Name 'Servers' {
-
+                #region Service Profiles
                 $UcsServiceProfiles = Get-UcsServiceProfile | Where-Object {$_.Type -eq 'instance'} | Sort-Object Name
                 if ($UcsServiceProfiles) {
+                    #region Service Profiles Section
                     Section -Style Heading3 -Name 'Service Profiles' {
                         foreach ($ServiceProfile in $UcsServiceProfiles) {
                             Section -Style Heading4 -Name "$($ServiceProfile.Name)" {
@@ -838,21 +839,14 @@ foreach ($UCS in $Target) {
                             }
                         }
                     }
-                    <#
-                    Section -Style Heading3 -Name 'Service Profile vNIC Placements' {
-                        $UcsLsVConAssign = Get-UcsLsVConAssign -Transport ethernet | Sort-Object Dn, Order | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, @{L = 'vNIC Name'; E = {$_.Vnicname}}, Adminvcon, Order
-                        $UcsLsVConAssign | Table -Name 'Service Profile vNIC Placements' 
-                    }
-            
-                    Section -Style Heading3 -Name 'Ethernet VLAN to vNIC Mappings' {
-                        $UcsAdaptorVlan = Get-UcsAdaptorVlan | Sort-Object Dn, Id |Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Name, Id, @{L = 'Switch Id'; E = {$_.SwitchId}}
-                        $UcsAdaptorVlan | Table -Name 'Ethernet VLAN to vNIC Mappings' 
-                    }
-                    #>
+                    #endregion Service Profiles Section
                 }
-        
+                #endregion Service Profiles
+
+                #region Service Profile Templates
                 $UcsServiceProfileTemplates = Get-UcsServiceProfile | Where-Object {$_.Type -ne 'instance'} | Sort-Object Name
                 if ($UcsServiceProfileTemplates) {
+                    #region Service Profile Templates Section
                     Section -Style Heading3 -Name 'Service Profile Templates' {
                         foreach ($ServiceProfileTemplate in $UcsServiceProfileTemplates) {
                             Section -Style Heading4 -Name "$($ServiceProfile.Name)" {
@@ -884,35 +878,37 @@ foreach ($UCS in $Target) {
                             }
                         }
                     }
+                    #endregion Service Profile Templates Section
                 }
+                #endregion Service Profile Templates
 
+                #region Server Policies Section
                 Section -Style Heading2 -Name 'Policies' {
+
+                    Section -Style Heading3 -Name 'Adapter Policies' {
+                        $UcsEthAdapterPolicy = Get-UcsEthAdapterPolicy -Ucs $UCSM
+                        if ($UcsEthAdapterPolicy) {
+                            Section -Style Heading4 -Name 'Ethernet Adapter Policies' {
+                                $EthAdapterPolicies = foreach ($EthAdapterPolicy in $UcsEthAdapterPolicy) {
+                                    [PSCustomObject]@{
+                                        'Name' = $EthAdapterPolicy.Name
+                                        'Owner' = $EthAdapterPolicy.PolicyOwner
+                                        'Description' = $EthAdapterPolicy.Descr
+                                    }
+                                }
+                            }
+                        }
+
+                        Section -Style Heading4 -Name 'Fibre Channel Adapter Policies' {
+                        }
+
+                        Section -Style Heading4 -Name 'iSCSI Adapter Policies' {
+                        }
+                    }
+
+                    Section -Style Heading3 -Name 'BIOS Defaults' {
+                    }
         
-                    Section -Style Heading3 -Name 'Maintenance Policies' {
-                        $UcsMaintenancePolicy = Get-UcsMaintenancePolicy | Select-Object Name, @{L = 'Distinguished Name'; E = {$_.Dn}}, UptimeDisr, Descr
-                        $UcsMaintenancePolicy | Table -Name 'Maintenance Policies' 
-                    }
-        
-                    Section -Style Heading3 -Name 'Boot Policies' {
-                        $UcsBootPolicy = Get-UcsBootPolicy | Sort-Object Dn | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Name, Purpose, RebootOnUpdate
-                        $UcsBootPolicy | Table -Name 'Boot Policies' 
-                    }
-
-                    Section -Style Heading3 -Name 'SAN Boot Policies' {
-                        $UcsLsbootSanImagePath = Get-UcsLsbootSanImagePath | Sort-Object Dn | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Type, Vnicname, Lun, Wwn | Where-Object -FilterScript {$_.Dn -notlike 'sys/chassis*'}
-                        $UcsLsbootSanImagePath | Table -Name 'SAN Boot Policies' 
-                    }
-
-                    Section -Style Heading3 -Name 'Local Disk Policies' {
-                        $UcsLocalDiskConfigPolicy = Get-UcsLocalDiskConfigPolicy | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Name, Mode, Descr
-                        $UcsLocalDiskConfigPolicy | Table -Name 'Local Disk Policies' 
-                    }
-
-                    Section -Style Heading3 -Name 'Scrub Policies' {
-                        $UcsScrubPolicy = Get-UcsScrubPolicy | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Name, BiosSettingsScrub, DiskScrub | Where-Object {$_.Name -ne 'policy'}
-                        $UcsScrubPolicy | Table -Name 'Scrub Policies' 
-                    }
-            
                     Section -Style Heading3 -Name 'BIOS Policies' {
                         $UcsBiosPolicy = Get-UcsBiosPolicy  
                         $UcsBiosPolicies = foreach ($BiosPolicy in $UcsBiosPolicy) {
@@ -925,7 +921,74 @@ foreach ($UCS in $Target) {
                         }
                         $UcsBiosPolicies | Table -Name 'BIOS Policies'
                     } 
+
+                    Section -Style Heading3 -Name 'Boot Policies' {
+                        $UcsBootPolicy = Get-UcsBootPolicy | Sort-Object Dn | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Name, Purpose, RebootOnUpdate
+                        $UcsBootPolicy | Table -Name 'Boot Policies' 
+                    }
+
+                    Section -Style Heading3 -Name 'Diagnostic Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'Graphics Card Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'Host Firmware Packages' {
+                    }
+
+                    Section -Style Heading3 -Name 'IPMI Access Profiles' {
+                    }
+
+                    Section -Style Heading3 -Name 'KVM Management Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'Local Disk Config Policies' {
+                        $UcsLocalDiskConfigPolicy = Get-UcsLocalDiskConfigPolicy | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Name, Mode, Descr
+                        $UcsLocalDiskConfigPolicy | Table -Name 'Local Disk Config Policies' 
+                    }
+
+                    Section -Style Heading3 -Name 'Maintenance Policies' {
+                        $UcsMaintenancePolicy = Get-UcsMaintenancePolicy | Select-Object Name, @{L = 'Distinguished Name'; E = {$_.Dn}}, UptimeDisr, Descr
+                        $UcsMaintenancePolicy | Table -Name 'Maintenance Policies' 
+                    }
+        
+                    Section -Style Heading3 -Name 'Management Firmware Packages' {
+                    }
+
+                    Section -Style Heading3 -Name 'Memory Policy' {
+                    }
+
+                    Section -Style Heading3 -Name 'Power Control Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'Power Sync Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'Scrub Policies' {
+                        $UcsScrubPolicy = Get-UcsScrubPolicy | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Name, BiosSettingsScrub, DiskScrub | Where-Object {$_.Name -ne 'policy'}
+                        $UcsScrubPolicy | Table -Name 'Scrub Policies' 
+                    }
+
+                    Section -Style Heading3 -Name 'Serial over LAN Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'Server Pool Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'Server Pool Policy Qualifications' {
+                    }
+
+                    Section -Style Heading3 -Name 'Threshold Policies' {
+                    }
+
+                    Section -Style Heading3 -Name 'iSCSI Authentication Profiles' {
+                    }
+
+                    Section -Style Heading3 -Name 'vMedia Policies' {
+                    }
+
                 }
+                #endregion Server Policies Section
 
 <#                        Section -Style Heading4 -Name 'BIOS Policy Settings' {
                             Get-UcsBiosPolicy | Get-UcsBiosVfQuietBoot | Sort-Object Dn | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Vp* | Table -Name 'BIOS Policy VfQuietBoot'
@@ -990,6 +1053,7 @@ foreach ($UCS in $Target) {
                             BlankLine
                         }
 #>
+                #region Server Pools Section
                 Section -Style Heading2 -Name 'Pools' {
                     #region UUID Pools
                     $UcsUuidSuffixPool = Get-UcsUuidSuffixPool -Ucs $UCSM
@@ -1067,11 +1131,12 @@ foreach ($UCS in $Target) {
 
                     #region Server Pool Assignments
                     Section -Style Heading3 -Name 'Server Pool Assignments' {
-                        $UcsComputePooledSlot = Get-UcsComputePooledSlot | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Rn
-                        $UcsComputePooledSlot | Table -Name 'Server Pool Assignments' 
+                    #    $UcsComputePooledSlot = Get-UcsComputePooledSlot | Select-Object @{L = 'Distinguished Name'; E = {$_.Dn}}, Rn
+                    #    $UcsComputePooledSlot | Table -Name 'Server Pool Assignments' 
                     }
                     #endregion Server Pool Assignments
                 }
+                #endregion Server Pools Section
             }
         }
         #endregion Servers Section
@@ -1081,6 +1146,16 @@ foreach ($UCS in $Target) {
             Section -Style Heading2 -Name 'LAN' {
                 #region LAN Cloud Section
                 Section -Style Heading3 -Name 'LAN Cloud' {
+
+                    $UcsLanCloud = Get-UcsLanCloud -Ucs $UCSM
+                    if ($UcsLanCloud) {
+                       $LanCloud = [PSCustomObject]@{
+                           'UCS' = $UcsLanCloud.Ucs
+                           'Mode' = $UcsLanCloud.Mode
+                       } 
+                       $LanCloud | Table -Name 'LAN Cloud' -ColumnWidths 50, 50
+                    }
+
                     #region Port Channels and Uplinks Section
                     $UcsUplinkPortChannel = Get-UcsUplinkPortChannel -Ucs $UCSM
                     if ($UcsUplinkPortChannel) {
@@ -1248,6 +1323,7 @@ foreach ($UCS in $Target) {
                             $FabricLanCloudPolicy | Table -List -Name 'LAN Global Policies' -ColumnWidths 50, 50
                         }
                     }
+                    #endregion Global Policies Section
 
                     <#
                     #region Default vNIC Behavior Policy Section
@@ -1443,6 +1519,7 @@ foreach ($UCS in $Target) {
                 }
                 #endregion LAN Policies Section
 
+                #region Pools Section
                 Section -Style Heading3 -Name 'Pools' {
                     #region IP Pools Section
                     $UcsIpPool = Get-UcsIpPool -Ucs $UCSM
@@ -1561,6 +1638,7 @@ foreach ($UCS in $Target) {
                     }
                     #endregion MAC Pool Addresses
                 }
+                #endregion Pools Section
             }
         }
         #endregion LAN Section
@@ -1568,11 +1646,121 @@ foreach ($UCS in $Target) {
         #region SAN Section
         if ($Section.SAN) {
             Section -Style Heading2 -Name 'SAN' {
+                #region SAN Cloud Section
                 Section -Style Heading3 -Name 'SAN Cloud' {
-                }
 
-                Section -Style Heading3 -Name 'Storage Cloud' {
+                    $UcsSanCloud = Get-UcsSanCloud -Ucs $UCSM
+                    if ($UcsSanCloud) {
+                       $SanCloud = [PSCustomObject]@{
+                           'UCS' = $UcsSanCloud.Ucs
+                           'Mode' = $UcsSanCloud.Mode
+                       } 
+                       $SanCloud | Table -Name 'SAN Cloud' -ColumnWidths 50, 50
+                    }
+
+                    #region FC Port Channels
+                    $UcsFcUplinkPortChannel = Get-UcsFcUplinkPortChannel -Ucs $UCSM
+                    if ($UcsFcUplinkPortChannel) {
+                        Section -Style Heading4 -Name 'FC Port Channels' {
+                            $FcUplinkPortChannel = foreach ($FcPortChannel in $UcsFcUplinkPortChannel) {
+                                [PSCustomObject]@{
+                                    'Fabric' = $FcPortChannel.SwitchId
+                                    'Port ID' = $FcPortChannel.PortId
+                                    'Name' = $FcPortChannel.Name
+                                    'Description' = $FcPortChannel.Descr
+                                    'If Type' = $FcPortChannel.IfType
+                                    'Transport' = $FcPortChannel.Transport
+                                    'Admin Speed' = $FcPortChannel.AdminSpeed
+                                    'Operational Speed Gbps' = $FcPortChannel.OperSpeed
+                                    #'Ports'
+                                    'Status' = $FcPortChannel.OperState
+                                }
+                            }
+                            $FcUplinkPortChannel | Sort-Object 'Fabric' | Table -Name 'FC Port Channels'
+                        }
+                    }
+                    #endregion FC Port Channels
+
+                    #region FC Port Channels
+                    $UcsFabricFcoeSanPc = Get-UcsFabricFcoeSanPc -Ucs $UCSM
+                    if ($UcsFabricFcoeSanPc) {
+                        Section -Style Heading4 -Name 'FCoE Port Channels' {
+                        }
+                    }
+                    #endregion FC Port Channels
+
+                    #region Uplink FC Interfaces
+                    $UcsFiFcPort = Get-UcsFiFcPort -Ucs $UCSM
+                    if ($UcsFiFcPort) {
+                        Section -Style Heading4 -Name 'Uplink FC Interfaces' {
+                            $FiFcPorts = foreach ($FcPort in $UcsFiFcPort) {
+                                [PSCustomObject]@{
+                                    'Fabric' = $FcPort.SwitchId
+                                    'Port' = "$($FcPort.SlotId)/$($FcPort.PortId)"
+                                    'WWN' = $FcPort.wwn
+                                    'Unified Port' = $FcPort.UnifiedPort
+                                    'Port Channel Member' = $FcPort.IsPortChannelMember
+                                    'State' = $FcPort.AdminState
+                                    'If Role' = $FcPort.IfRole
+                                    'If Type' = $FcPort.IfType
+                                    'Network Type' = $FcPort.Type
+                                    'Transport' = $FcPort.Transport -join ', '
+                                    'Speed' = $FcPort.OperSpeed
+                                    'Status' = $FcPort.OperState
+                                }
+                            }
+                            $FiFcPorts | Sort-Object 'Fabric', 'Port' | Table -Name 'Uplink FC Interfaces'
+                        }
+                    }
+                    #endregion Uplink FC Interfaces
+
+                    #region Uplink FCoE Interfaces
+                    $UcsFabricPort = Get-UcsFabricPort -Ucs $UCSM | Where-Object {$_.IfRole -eq 'fcoe-uplink'}
+                    if ($UcsFabricPort) {
+                        Section -Style Heading4 -Name 'Uplink FCoE Interfaces' {
+                        }
+                    }
+                    #endregion Uplink FCoE Interfaces
+
+                    #region VSANs
+                    $UcsVsan = Get-UcsVsan -Ucs $UCSM
+                    if ($UcsVsan) {
+                        Section -Style Heading4 -Name 'VSANs' {
+                            $Vsans = foreach ($Vsan in $UcsVsan) {
+                                [PSCustomObject]@{
+                                    'Name' = $Vsan.Name
+                                    'ID' = $Vsan.Id
+                                    'Fabric' = $Vsan.SwitchId
+                                    'If Type' = $Vsan.IfType
+                                    'If Role' = $Vsan.IfRole
+                                    'Transport' = $Vsan.Transport
+                                    'FCoE VLAN' = $Vsan.FcoeVlan
+                                    'FC Zoning' = $Vsan.ZoningState
+                                    'Default FC Zoning' = $Vsan.DefaultZoning
+                                    'FC Zone Sharing Mode' = $Vsan.FcZoneSharingMode
+                                    'Status' = $Vsan.OperState
+                                }
+                            }
+                            $Vsans | Sort-Object 'Fabric', 'Name', 'ID' | Table -Name 'VSANs'
+                        }
+                    }
+                    #endregion VSANs
                 }
+                #endregion SAN Cloud Section
+
+                <#
+                ##TODO
+                Section -Style Heading3 -Name 'Storage Cloud' {
+                    Section -Style Heading4 -Name 'Storage FC Interfaces' {
+                    }
+
+                    Section -Style Heading4 -Name 'Storage FCoE Interfaces' {
+                    }
+
+                    Section -Style Heading4 -Name 'FC Zone Profiles' {
+                    }
+                }
+                #>
 
                 Section -Style Heading3 -Name 'Policies' {
                     Section -Style Heading4 -Name 'Default vHBA Behavior' {
@@ -1646,6 +1834,8 @@ foreach ($UCS in $Target) {
         #endregion SAN Section
         
         #region VM Section
+        ##TODO
+        <#
         if ($Section.VM) {
             Section -Style Heading2 -Name 'VM' {
                 Section -Style Heading3 -Name 'Clusters' {
@@ -1667,9 +1857,12 @@ foreach ($UCS in $Target) {
                 }
             }
         }
+        #>
         #endregion VM Section
 
         #region Storage Section
+        ##TODO
+        <#
         if ($Section.Storage) {
             Section -Style Heading2 -Name 'Storage' {
                 Section -Style Heading3 -Name 'Storage Profiles' {
@@ -1679,9 +1872,12 @@ foreach ($UCS in $Target) {
                 }
             }
         }
+        #>
         #endregion Storage Section
 
         #region Chassis Section
+        ##TODO
+        <#
         if ($Section.Chassis) {
             Section -Style Heading2 -Name 'Chassis' {
                 Section -Style Heading3 -Name 'Chassis Profiles' {
@@ -1694,6 +1890,7 @@ foreach ($UCS in $Target) {
                 }
             }
         }
+        #>
         #endregion Chassis Section
 
         #region Admin Section
